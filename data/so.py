@@ -1,6 +1,12 @@
 import glob
 import decimal
 
+def save_file(mas):
+	f = open("data.txt","w")
+	for value in mas:
+		st = str(value[0])+" "+str(value[1])+" "+str(value[2])+'\n'
+		f.write(st)
+	f.close()
 def get(line):
 
     rank = int(line.split(' ')[0])
@@ -15,8 +21,11 @@ for filename in glob.glob("*.txt"):
     for line in f:
         if line[0]=='_':
             continue
-        mas.append(get(line))
+	try:
+       		mas.append(get(line))
+	except:
+		print filename, line
+ 
+save_file(mas)
 
-for k in mas:
-    if k[1]==17:
-        print k
+
