@@ -1,10 +1,14 @@
 ##Summary
 Hello! <Enter>
-This is the works to the course "Supercomputer Modeling and Technology"<Enter>
-Author: Raev Evgeny, 611 group, CMC Faclulty<Enter>
-2016 <Enter>
+This is the works to the course "Supercomputer Modeling and Technology"
+
+Author: Raev Evgeny, 611 group, CMC Faclulty
+
+2016
+
 ## Task 1
 The exercise was make the algowiki article with algorithm description.
+
 My algorithm is generating Hadamar matrix.
 Article available here
 
