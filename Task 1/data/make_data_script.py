@@ -18,7 +18,7 @@ def save_file(mas):
         time = float(value[2])
         op = float(get_z_ef(value[1]))
         ef = op/(time*1000000000)
-        st = str(value[0])+" "+str(value[1])+" "+str(ef)+'\n'
+        st = str(value[0])+" "+str(value[1])+" "+str(time)+'\n'
         f.write(st)
     f.close()
     
@@ -29,7 +29,7 @@ def get(line):
     time = float(decimal.Decimal(time))
     return [rank,matrsize,time]
 
-def get_mas()
+def get_mas():
     mas=[]
     for filename in glob.glob("data/*.txt"):
         f = open(filename,"r")
