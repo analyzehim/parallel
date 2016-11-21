@@ -10,7 +10,8 @@ Author: Raev Evgeny, 611 group, CMC Faclulty
 The exercise was make the algowiki article with algorithm description.
 
 My algorithm is generating Hadamar matrix.
-Article available here
+
+Article available here: https://goo.gl/bgztFA
 
 ## Task 1
 To be do
