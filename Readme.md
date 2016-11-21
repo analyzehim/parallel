@@ -1,7 +1,11 @@
-module add impi/4.1.0 slurm intel
+#Summary
+Hello! <Enter>
 
-mpicxx task.cpp
+#Useful commands on Lomonosov
+module add impi/4.1.0 slurm intel<Enter>
 
-mpirun -n 1 task.cpp 10
+mpicxx task.cpp<Enter>
 
-sbatch -N 1 -n 5 -p gputest impi ./a.out 20
+mpirun -n 1 task.cpp 10<Enter>
+
+sbatch -N 1 -n 5 -p gputest impi ./a.out 20<Enter>
