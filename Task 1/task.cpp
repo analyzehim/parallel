@@ -24,23 +24,22 @@ int get_sign(int i, int j) //Get sign Hadamard matrix's element by indices
 int print_HadamardMatrix(int N, int rank, int size) //print Hadamard matrix 2^n size
 {
 
-    int matr_size(pow(2,N));
-    int *matr = new int[matr_size];
+    int matr_size( pow(2,N) );
+    int *matr = new int[matr_size * matr_size];
 
-    int i_start = (matr_size / size) * rank;
+    int k_start = (matr_size / size) * rank;
 
-    int i_end = (matr_size / size) * (rank + 1);
+    int k_end = (matr_size / size) * (rank + 1);
 
-    for (int i = i_start; i < i_end; i++)
+    for (int k = k_start; i < k_end; k++)
     {
-        for (int j = 0; j < matr_size; j++) 
-        {
-
-            if (get_sign(i,j) == 1) 
-                matr[j] = 1;
-            else 
-                matr[j] = -1;
-        }
+        i = k mod matr_size;
+        j = k div matr_size;
+        
+        if (get_sign(i,j) == 1) 
+            matr[j] = 1;
+        else 
+            matr[j] = -1;
     }
     return 0;
 }
