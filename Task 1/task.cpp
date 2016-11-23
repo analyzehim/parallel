@@ -31,13 +31,13 @@ int print_HadamardMatrix(int N, int rank, int size) //print Hadamard matrix 2^n 
 
     int k_end = (matr_size / size) * (rank + 1);
 
-    for (int k = k_start; i < k_end; k++)
+    for (int k = k_start; k < k_end; k++)
     {
-        i = k mod matr_size;
-        j = k div matr_size;
-        
+        int i ( k / matr_size );
+        int j ( k % matr_size );
+
         if (get_sign(i,j) == 1) 
-            matr[j] = 1;
+            matr[j] =  1;
         else 
             matr[j] = -1;
     }
