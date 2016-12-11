@@ -1,5 +1,4 @@
-// This is the explicit conjugate gradient method for descrete Puasson problem
-// on nonuniform mesh.
+
 #include <mpi.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -129,14 +128,14 @@ void down_data_exchange(int down, int first_index, int last_index, int NX, int g
     MPI_Request recv_request[1];
     MPI_Irecv(recv_solv_vect_buf, size, MPI_DOUBLE, down, 0, MPI_COMM_WORLD, recv_request);
     int index;
-    //#pragma omp parallel for
+
     for (index = first_index; index <= last_index; index++) {
         send_solv_vect_buf[index - first_index] = data[NX * grid_coord_down + index];
     }
     MPI_Request send_request[1];
     MPI_Isend(send_solv_vect_buf, size, MPI_DOUBLE, down, 0, MPI_COMM_WORLD, send_request);
     MPI_Waitall(1, recv_request, MPI_STATUS_IGNORE);
-    //#pragma omp parallel for
+
     for (index = first_index; index <= last_index; index++) {
         data[NX * (grid_coord_down - 1) + index] = recv_solv_vect_buf[index - first_index];
     }
@@ -151,14 +150,14 @@ void left_data_exchange(int left, int first_index, int last_index, int NX, int g
     MPI_Request recv_request[1];
     MPI_Irecv(recv_solv_vect_buf, size, MPI_DOUBLE, left, 0, MPI_COMM_WORLD, recv_request);
     int index;
-    //#pragma omp parallel for
+
     for (index = first_index; index <= last_index; index++) {
         send_solv_vect_buf[index - first_index] = data[NX * index + grid_coord_left];
     }
     MPI_Request send_request[1];
     MPI_Isend(send_solv_vect_buf, size, MPI_DOUBLE, left, 0, MPI_COMM_WORLD, send_request);
     MPI_Waitall(1, recv_request, MPI_STATUS_IGNORE);
-    //#pragma omp parallel for
+
     for (index = first_index; index <= last_index; index++) {
         data[NX * index + grid_coord_left - 1] = recv_solv_vect_buf[index - first_index];
     }
@@ -173,14 +172,14 @@ void right_data_exchange(int right, int first_index, int last_index, int NX, int
     MPI_Request recv_request[1];
     MPI_Irecv(recv_solv_vect_buf, size, MPI_DOUBLE, right, 0, MPI_COMM_WORLD, recv_request);
     int index;
-    //#pragma omp parallel for
+
     for (index = first_index; index <= last_index; index++) {
         send_solv_vect_buf[index - first_index] = data[NX * index + grid_coord_right];
     }
     MPI_Request send_request[1];
     MPI_Isend(send_solv_vect_buf, size, MPI_DOUBLE, right, 0, MPI_COMM_WORLD, send_request);
     MPI_Waitall(1, recv_request, MPI_STATUS_IGNORE);
-    //#pragma omp parallel for
+
     for (index = first_index; index <= last_index; index++) {
         data[NX * index + grid_coord_right + 1] = recv_solv_vect_buf[index - first_index];
     }
@@ -195,14 +194,14 @@ void up_data_exchange(int up, int first_index, int last_index, int NX, int grid_
     MPI_Request recv_request[1];
     MPI_Irecv(recv_solv_vect_buf, size, MPI_DOUBLE, up, 0, MPI_COMM_WORLD, recv_request);
     int index;
-    //#pragma omp parallel for
+
     for (index = first_index; index <= last_index; index++) {
         send_solv_vect_buf[index - first_index] = data[NX * grid_coord_up + index];
     }
     MPI_Request send_request[1];
     MPI_Isend(send_solv_vect_buf, size, MPI_DOUBLE, up, 0, MPI_COMM_WORLD, send_request);
     MPI_Waitall(1, recv_request, MPI_STATUS_IGNORE);
-    //#pragma omp parallel for
+
     for (index = first_index; index <= last_index; index++) {
         data[NX * (grid_coord_up + 1) + index] = recv_solv_vect_buf[index - first_index];
     }
@@ -211,9 +210,9 @@ void up_data_exchange(int up, int first_index, int last_index, int NX, int grid_
 }
 
 void borderExchange(double *data, int up, int down, int left, int right, int NX, int grid_coord_up, int grid_coord_down, int grid_coord_left, int grid_coord_right) {
-    //#pragma omp sections
+
     {
-        //#pragma omp section
+
         if (down != -1) {
             down_data_exchange(down, grid_coord_left, grid_coord_right, NX, grid_coord_down, data);
         }
@@ -260,7 +259,7 @@ int main(int argc, char * argv[])
 	double * RHS_Vect;					// the right hand side of Puasson equation.
 	double sp, sumSp, alpha, sumAlpha, tau, sumTau, NewValue, err;			// auxiliary values.
 	int SDINum, CGMNum;					// the number of steep descent and CGM iterations.
-	int counter;                        // the current iteration number.
+	int iteration;                        // the current iteration number.
 	double s1;
     double ex_time;
     double t_start, t_finish;
@@ -352,13 +351,6 @@ int main(int argc, char * argv[])
     MPI_Cart_shift(Grid_Comm, 0, 1, &left, &right);
     MPI_Cart_shift(Grid_Comm, 1, 1, &up, &down);
 
-    //#ifdef Print
-    //printf("My Rank in Grid_Comm is %d. My topological coords is (%d,%d). Domain size is %d x %d nodes.\n"
-    //       "My neighbours: left = %d, right = %d, down = %d, up = %d.\n",
-    //       rank, Coords[0], Coords[1], n0, n1, left,right, down,up);
-    //#endif
-
-    // ------------------------------------------------------------------------------------
 
     if(rank == 0) {
         sprintf(str,"PuassonSerial_ECGM_%dx%d.log", NX, NY);
@@ -374,8 +366,6 @@ int main(int argc, char * argv[])
 	ResVect   = (double *)malloc(NX*NY*sizeof(double));
 	RHS_Vect  = (double *)malloc(NX*NY*sizeof(double));
 
-    // this processor is responsible for the field [x1,y1]-[x2,y2]
-    // counting x1,x2,y1,y2
     if (Coords[0] < k0) {
         x1 = Coords[0]*n0+1;
         x2 = x1 + n0 - 1;
@@ -400,25 +390,23 @@ int main(int argc, char * argv[])
     sendDownBuf = (double *)malloc(n0*sizeof(double));
     recDownBuf = (double *)malloc(n0*sizeof(double));
 
-    //if (rank == 0) {
-        //printf("\n x1 = %d, x2 = %d, y1 = %d, y2 = %d\n",x1,x2,y1,y2);
-    //}
+
 
 // Initialization of Arrays
 
 	memset(ResVect,0,NX*NY*sizeof(double));
 	memset(SolVect,0,NX*NY*sizeof(double));
-	RightPart(RHS_Vect);//!!!
+	RightPart(RHS_Vect);
 
 	for(i=0; i<NX; i++)
 	{
-		SolVect[i] = BoundaryValue(x(i),0.0);//!!!
-		SolVect[NX*(NY-1)+i] = BoundaryValue(x(i),B);//!!!
+		SolVect[i] = BoundaryValue(x(i),0.0);
+		SolVect[NX*(NY-1)+i] = BoundaryValue(x(i),B);
 	}
 	for(j=0; j<NY; j++)
 	{
-		SolVect[NX*j] = BoundaryValue(0.0,y(j));//!!!
-		SolVect[NX*j+(NX-1)] = BoundaryValue(A,y(j));//!!!
+		SolVect[NX*j] = BoundaryValue(0.0,y(j));
+		SolVect[NX*j+(NX-1)] = BoundaryValue(A,y(j));
 	}
 
 // Iterations ...
@@ -430,12 +418,10 @@ int main(int argc, char * argv[])
         }
 	#endif
 
-	for(counter=1; counter<=SDINum; counter++)
+	for(iteration=1; iteration<=SDINum; iteration++)
 	{
-	    if (counter > 1) {
-            // SolVect exchange
+	    if (iteration > 1) {
             borderExchange(SolVect, Coords, dims, n0, n1, x1, x2, y1, y2, Grid_Comm, left, right, up, down);
-            // SolVect has been changed
 	    }
 // The residual vector r(k) = Ax(k)-f is calculating ...
 		for(i=x1; i <= x2; i++)
@@ -452,11 +438,9 @@ int main(int argc, char * argv[])
         MPI_Allreduce(&sp, &sumSp, 1, MPI_DOUBLE, MPI_SUM, Grid_Comm);
         sp = sumSp;
 		tau = sp;
-        //
-        // ResVect exchange
+
         borderExchange(ResVect, Coords, dims, n0, n1, x1, x2, y1, y2, Grid_Comm, left, right, up, down);
-        // ResVect has been changed
-        //
+
 // The value of product sp = (Ar(k),r(k)) is calculating ...
 		sp = 0.0;
 		for(i=x1; i <= x2; i++)
@@ -481,18 +465,7 @@ int main(int argc, char * argv[])
         MPI_Barrier(Grid_Comm);
         MPI_Allreduce(&err, &sumErr, 1, MPI_DOUBLE, MPI_SUM, Grid_Comm);
         // err has been summirized
-        if(rank == 0) {
-            if(counter%Step == 0)
-            {
-                //printf("The Steep Descent iteration %d has been performed.\n",counter);
 
-        //#ifdef Print
-        //        fprintf(fp,"\nThe Steep Descent iteration k = %d has been performed.\n"
-        //				"Step \\tau(k) = %f.\nThe difference value is estimated by %.12f.\n",\
-        //				counter, tau, sumErr);
-        //#endif
-            }
-        }
     }
 // the end of steep descent iteration.
 
@@ -508,7 +481,7 @@ int main(int argc, char * argv[])
         }
 	#endif
 
-	for(counter=0; counter<CGMNum; counter++)
+	for(iteration=0; iteration<CGMNum; iteration++)
 	{
 	    // SolVect exchange
         borderExchange(SolVect, Coords, dims, n0, n1, x1, x2, y1, y2, Grid_Comm, left, right, up, down);
@@ -577,14 +550,14 @@ int main(int argc, char * argv[])
         MPI_Allreduce(&err, &sumErr, 1, MPI_DOUBLE, MPI_SUM, Grid_Comm);
         // err has been summirized
         if(rank == 0) {
-            if(counter%Step == 0)
+            if(iteration%Step == 0)
             {
                 //printf("The %d iteration of CGM method has been carried out.\n", counter);
 
     #ifdef Print
                 fprintf(fp,"\nThe iteration %d of conjugate gradient method has been finished.\n"
                            "The value of \\alpha(k) = %f, \\tau(k) = %f. The difference value is %f.\n",\
-                            counter, alpha, tau, sumErr);
+                            iteration, alpha, tau, sumErr);
     #endif
 
             }
@@ -613,12 +586,12 @@ int main(int argc, char * argv[])
     // err has been summirized
     if(rank == 0) {
         printf("\nThe %d iterations are carried out. The error of iterations is estimated by %.12f.\n",
-                    SDINum+counter, sumErr);
+                    SDINum+iteration, sumErr);
         printf("\nThe executing time is %f.\nNumber of processors = %d\n",
                     ex_time, ProcNum);
     // printing some results ...
         fprintf(fp,"\nThe %d iterations are carried out. The error of iterations is estimated by %.12f.\n",
-                    SDINum+counter, sumErr);
+                    SDINum+iteration, sumErr);
         fclose(fp);
     }
 
