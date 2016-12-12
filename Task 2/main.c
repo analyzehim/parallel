@@ -209,119 +209,33 @@ void up_data_exchange(int up, int first_index, int last_index, int NX, int grid_
     free(recv_solv_vect_buf);
 }
 
-void data_exchange(double *data, int up, int down, int left, int right, int NX, int grid_coord_up, int grid_coord_down, int grid_coord_left, int grid_coord_right) {
-    //#pragma omp sections
-    {
-        //#pragma omp section
-        if (down != -1) {
-            down_data_exchange(down, grid_coord_left, grid_coord_right, NX, grid_coord_down, data);
-        }
-        //#pragma omp section
-        if (left != -1) {
-            left_data_exchange(left, grid_coord_down, grid_coord_up, NX, grid_coord_left, data);
-        }
-        //#pragma omp section
-        if (right != -1) {
-            right_data_exchange(right, grid_coord_down, grid_coord_up, NX, grid_coord_right, data);
-        }
-        //#pragma omp section
-        if (up != -1) {
-            up_data_exchange(up, grid_coord_left, grid_coord_right, NX, grid_coord_up, data);
-        }
-    }
-}
 
 
-void boundaryExchange(double * vect, int * Coords, int * dims, int n0, int n1, int x1, int x2, int y1, int y2,
-                    MPI_Comm Grid_Comm, int left, int right, int up, int down)
+void boundaryExchange(double * vect, int * Coords, int * dims, int n0, int n1, int x1, int x2, int y1, int y2, MPI_Comm Grid_Comm, int left, int right, int up, int down)
 {
     MPI_Request requests[8]; // request vector
     MPI_Status statuses[2]; // status vector
-    int rank;
-    // vect exchange
-    // this processor is responsible for the field [x1,y1]-[x2,y2]
-    // Domain size is n0 x n1 nodes.
-    // Processor's Rank in Grid_Comm is rank
-    // My topological coords is (Coords[0],Coords[1])
-    // My neighbours's ranks is: left, right, down, up
-    // Number of processes is dims[0] x dims[1]
-    // Buffers for exchanging: sendLeftBuf, recLeftBuf, sendRightBuf, recRightBuf;
-    // sendUpBuf, recUpBuf, sendDownBuf, recDownBuf;
-    // request[8] - request's vector
-    //
-    // sendBuffers filling
+
     if (Coords[0] > 0) {
-        for (int j=0; j<n1; j++) {
-            sendLeftBuf[j] = vect[NX*(y1+j)+x1];
+        for (int j = 0; j<n1; j++) {
+            left_data_exchange(left, y2, y1, NX, x1, vect);
         }
     }
     if (Coords[0] < dims[0]-1) {
-        for (int j=0; j<n1; j++) {
-            sendRightBuf[j] = vect[NX*(y1+j)+x2];
+        for (int j = 0; j<n1; j++) {
+            right_data_exchange(right, y2, y1, NX, x2, vect);
         }
     }
     if (Coords[1] > 0) {
-        for (int i=0; i<n0; i++) {
-            sendUpBuf[i] = vect[NX*y1+x1+i];
+        for (int i = 0; i<n0; i++) {
+            up_data_exchange(up, x1, x2, NX, y1, vect);
         }
     }
     if (Coords[1] < dims[1]-1) {
-        for (int i=0; i<n0; i++) {
-            sendDownBuf[i] = vect[NX*y2+x1+i];
+        for (int i = 0; i<n0; i++) {
+            down_data_exchange(down, x1, x2, NX, y2, vect);
         }
     }
-    // exchange
-    if (Coords[0] > 0) {
-        MPI_Isend(sendLeftBuf, n1, MPI_DOUBLE, left, 0, Grid_Comm, &(requests[0]));
-        MPI_Irecv(recLeftBuf, n1, MPI_DOUBLE, left, 1, Grid_Comm, &(requests[1]));
-    }
-    if (Coords[0] < dims[0]-1) {
-        MPI_Isend(sendRightBuf, n1, MPI_DOUBLE, right, 1, Grid_Comm, &(requests[2]));
-        MPI_Irecv(recRightBuf, n1, MPI_DOUBLE, right, 0, Grid_Comm, &(requests[3]));
-    }
-    if (Coords[1] > 0) {
-        MPI_Isend(sendUpBuf, n0, MPI_DOUBLE, up, 2, Grid_Comm, &(requests[4]));
-        MPI_Irecv(recUpBuf, n0, MPI_DOUBLE, up, 3, Grid_Comm, &(requests[5]));
-    }
-    if (Coords[1] < dims[1]-1) {
-        MPI_Isend(sendDownBuf, n0, MPI_DOUBLE, down, 3, Grid_Comm, &(requests[6]));
-        MPI_Irecv(recDownBuf, n0, MPI_DOUBLE, down, 2, Grid_Comm, &(requests[7]));
-    }
-    // Waiting for exchange finish
-    if (Coords[0] > 0) {
-        MPI_Waitall(2, &(requests[0]), statuses);
-    }
-    if (Coords[0] < dims[0]-1) {
-        MPI_Waitall(2, &(requests[2]), statuses);
-    }
-    if (Coords[1] > 0) {
-        MPI_Waitall(2, &(requests[4]), statuses);
-    }
-    if (Coords[1] < dims[1]-1) {
-        MPI_Waitall(2, &(requests[6]), statuses);
-    }
-    // recBuffers reading
-    if (Coords[0] > 0) {
-        for (int j=0; j<n1; j++) {
-                vect[NX*(y1+j)+x1-1] = recLeftBuf[j];
-        }
-    }
-    if (Coords[0] < dims[0]-1) {
-        for (int j=0; j<n1; j++) {
-                vect[NX*(y1+j)+x2+1] = recRightBuf[j];
-        }
-    }
-    if (Coords[1] > 0) {
-        for (int i=0; i<n0; i++) {
-                vect[NX*(y1-1)+x1+i] = recUpBuf[i];
-        }
-    }
-    if (Coords[1] < dims[1]-1) {
-        for (int i=0; i<n0; i++) {
-                vect[NX*(y2+1)+x1+i] = recDownBuf[i];
-        }
-    }
-    // vect has been changed
 }
 
 
@@ -410,6 +324,8 @@ int main(int argc, char * argv[])
         MPI_Finalize();
         return(3);
     }
+
+
 
     p0 = SplitFunction(N0, N1, power);
     p1 = power - p0;
@@ -514,8 +430,8 @@ int main(int argc, char * argv[])
 	for(iteration=1; iteration<=SDINum; iteration++)
 	{
 	    if (iteration > 1) {
-            //boundaryExchange(SolVect, Coords, dims, n0, n1, x1, x2, y1, y2, Grid_Comm, left, right, up, down);
-            data_exchange(SolVect, up, down, left, right, NX, y1, y2, x1, x2);
+            boundaryExchange(SolVect, Coords, dims, n0, n1, x1, x2, y1, y2, Grid_Comm, left, right, up, down);
+         
 
 	    }
 // The residual vector r(k) = Ax(k)-f is calculating ...
@@ -534,8 +450,8 @@ int main(int argc, char * argv[])
         sp = sumSp;
 		tau = sp;
 
-        //boundaryExchange(ResVect, Coords, dims, n0, n1, x1, x2, y1, y2, Grid_Comm, left, right, up, down);
-        data_exchange(ResVect, up, down, left, right, NX, y1, y2, x1, x2);
+        boundaryExchange(ResVect, Coords, dims, n0, n1, x1, x2, y1, y2, Grid_Comm, left, right, up, down);
+
 
 // The value of product sp = (Ar(k),r(k)) is calculating ...
 		sp = 0.0;
@@ -580,8 +496,8 @@ int main(int argc, char * argv[])
 	for(iteration=0; iteration<CGMNum; iteration++)
 	{
 	    // SolVect exchange
-        //boundaryExchange(SolVect, Coords, dims, n0, n1, x1, x2, y1, y2, Grid_Comm, left, right, up, down);
-        data_exchange(SolVect, up, down, left, right, NX, y1, y2, x1, x2);
+        boundaryExchange(SolVect, Coords, dims, n0, n1, x1, x2, y1, y2, Grid_Comm, left, right, up, down);
+
         // SolVect has been changed
 	// The residual vector r(k) is calculating ...
 		for(i=x1; i <= x2; i++)
@@ -589,8 +505,8 @@ int main(int argc, char * argv[])
 				ResVect[NX*j+i] = LeftPart(SolVect,i,j)-RHS_Vect[NX*j+i];
 
         // ResVect exchange
-        //boundaryExchange(ResVect, Coords, dims, n0, n1, x1, x2, y1, y2, Grid_Comm, left, right, up, down);
-        data_exchange(ResVect, up, down, left, right, NX, y1, y2, x1, x2);
+        boundaryExchange(ResVect, Coords, dims, n0, n1, x1, x2, y1, y2, Grid_Comm, left, right, up, down);
+
         // ResVect has been changed
 
 	// The value of product (Ar(k),g(k-1)) is calculating ...
@@ -621,8 +537,8 @@ int main(int argc, char * argv[])
 	// The value of product sp = (Ag(k),g(k)) is being calculated ...
 
         // BasisVect exchange
-        //boundaryExchange(BasisVect, Coords, dims, n0, n1, x1, x2, y1, y2, Grid_Comm, left, right, up, down);
-        data_exchange(BasisVect, up, down, left, right, NX, y1, y2, x1, x2);
+        boundaryExchange(BasisVect, Coords, dims, n0, n1, x1, x2, y1, y2, Grid_Comm, left, right, up, down);
+        
         // BasisVect has been changed
 
 		sp = 0.0;
